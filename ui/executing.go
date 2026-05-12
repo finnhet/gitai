@@ -11,6 +11,7 @@ import (
 	"github.com/finn/gitai/git"
 )
 
+
 type CommitResult struct {
 	Message string
 	Err     error
@@ -29,11 +30,6 @@ type ExecutingModel struct {
 	done    bool
 }
 
-var (
-	doneStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
-	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
-	pendingStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("243"))
-)
 
 func NewExecutingModel(commits []ai.CommitGroup) ExecutingModel {
 	s := spinner.New()
