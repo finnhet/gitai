@@ -1,9 +1,11 @@
 package ai
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"os/exec"
+	"io"
+	"net/http"
 	"strings"
 )
 
@@ -27,24 +29,53 @@ Rules:
 - Each file must appear exactly once across all groups
 - Messages must be concise (under 72 chars), imperative mood
 - Only output the JSON array, nothing else
-- Output commit messages in the language the code is if they want different they tell`
+
+const ollamaURL = "http://localhost:11434/api/generate"
+const ollamaModel = "qwen3:0.6b"
+
+type ollamaRequest struct {
+	Model  string `json:"model"`
+	Prompt string `json:"prompt"`
+	Stream bool   `json:"stream"`
+}
+
+type ollamaResponse struct {
+	Response string `json:"response"`
+}
 
 func AnalyzeDiff(diff string) ([]CommitGroup, string, error) {
 	prompt := systemPrompt + "\n\nHere is the git diff to analyze:\n\n" + diff
 
-	cmd := exec.Command("claude", "-p", prompt)
-	out, err := cmd.Output()
+	body, err := json.Marshal(ollamaRequest{
+		Model:  ollamaModel,
+		Prompt: prompt,
+		Stream: false,
+	})
 	if err != nil {
-		raw := ""
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			raw = string(exitErr.Stderr)
-		}
-		return nil, raw, fmt.Errorf("claude CLI failed: %w", err)
+		return nil, "", fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	raw := strings.TrimSpace(string(out))
+	resp, err := http.Post(ollamaURL, "application/json", bytes.NewReader(body))
+	if err != nil {
+		return nil, "", fmt.Errorf("ollama request failed: %w", err)
+	}
+	defer resp.Body.Close()
 
-	// Strip markdown code fences if present despite instructions
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, string(respBody), fmt.Errorf("ollama returned status %d", resp.StatusCode)
+	}
+
+	var ollamaResp ollamaResponse
+	if err := json.Unmarshal(respBody, &ollamaResp); err != nil {
+		return nil, string(respBody), fmt.Errorf("failed to parse ollama response: %w", err)
+	}
+
+	raw := strings.TrimSpace(ollamaResp.Response)
 	raw = stripCodeFences(raw)
 
 	var groups []CommitGroup
@@ -60,7 +91,6 @@ func stripCodeFences(s string) string {
 	if strings.HasPrefix(s, "```") {
 		lines := strings.Split(s, "\n")
 		if len(lines) > 2 {
-			// Remove first and last line (the fences)
 			lines = lines[1 : len(lines)-1]
 			s = strings.Join(lines, "\n")
 		}
