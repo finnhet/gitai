@@ -6,19 +6,9 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/finn/gitai/ai"
 )
 
-var (
-	selectedStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("212"))
-	normalStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
-	fileStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("243")).PaddingLeft(4)
-	helpStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	deletedStyle   = lipgloss.NewStyle().Strikethrough(true).Foreground(lipgloss.Color("240"))
-	headerStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("86"))
-	countStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("243"))
-)
 
 type ReviewModel struct {
 	commits  []ai.CommitGroup
