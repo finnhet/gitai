@@ -3,14 +3,6 @@ package ui
 import (
 	"fmt"
 	"strings"
-
-	"github.com/charmbracelet/lipgloss"
-)
-
-var (
-	successStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
-	failStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
-	warnStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
 )
 
 func DoneView(results []CommitResult) string {
